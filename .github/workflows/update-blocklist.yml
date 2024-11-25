@@ -15,7 +15,7 @@ jobs:
 
       - name: Download Blocklist
         run: |
-          curl -o ip-filter.blf "https://snort-org-site.s3.amazonaws.com/production/document_files/files/000/034/750/original/ip-filter.blf"
+          curl -o ip-filter.blf "http://www.talosintelligence.com/documents/ip-blacklist"
 
       - name: Commit and Push Changes
         run: |
