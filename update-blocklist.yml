@@ -1,0 +1,26 @@
+name: Update Blocklist
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Täglich um Mitternacht
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Download Blocklist
+        run: |
+          curl -o ip-filter.blf "https://snort-org-site.s3.amazonaws.com/production/document_files/files/000/034/750/original/ip-filter.blf"
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add ip-filter.blf
+          git commit -m "Automated update of IP blocklist"
+          git push
