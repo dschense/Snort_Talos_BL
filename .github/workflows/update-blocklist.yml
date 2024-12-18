@@ -1,40 +1,47 @@
-name: Update Blocklist
+name: Check IP Blocklist File
 
 on:
-  schedule:
-    - cron: "0 0 * * *" # Täglich um Mitternacht
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  update:
+  validate-ip-filter:
+    name: Validate ip-filter.blf File
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout Repository
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Download Blocklist
+      # Prüfen, ob die Datei existiert
+      - name: Check if ip-filter.blf exists
         run: |
-          # Blocklist herunterladen mit zusätzlichem User-Agent-Header "MISP"
-          curl -L \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
-            -H "User-Agent: MISP" \
-            --connect-timeout 20 \
-            -o ip-filter.blf \
-            "http://www.talosintelligence.com/documents/ip-blacklist"
-
-      - name: Commit and Push Changes
-        run: |
-          # Konfiguration von Git für den Commit
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          # Änderungen hinzufügen und committen
-          git add ip-filter.blf
-          if git diff --cached --exit-code; then
-            echo "Keine Änderungen gefunden, Push wird übersprungen."
-            exit 0
+          if [ ! -f "ip-filter.blf" ]; then
+            echo "Fehler: ip-filter.blf Datei existiert nicht!"
+            exit 1
           fi
 
-          git commit -m "Automated update of IP blocklist"
-          git push
+      # Prüfen, ob die Datei HTML-Code enthält
+      - name: Validate ip-filter.blf does not contain HTML
+        run: |
+          if grep -q "<html" ip-filter.blf; then
+            echo "Fehler: Die Datei ip-filter.blf enthält HTML-Code!"
+            exit 1
+          else
+            echo "ip-filter.blf ist gültig."
+          fi
+
+      # Optional: Dateiinhalt validieren (Format der IP-Adressen prüfen)
+      - name: Validate IP Address Format
+        run: |
+          if grep -E -v "^(#|[0-9]{1,3}(\.[0-9]{1,3}){3}(/\d{1,2})?)$" ip-filter.blf; then
+            echo "Fehler: ip-filter.blf enthält ungültige IP-Adressen oder Kommentare."
+            exit 1
+          else
+            echo "IP-Adressen in ip-filter.blf sind korrekt."
+          fi
