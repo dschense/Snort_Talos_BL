@@ -15,12 +15,26 @@ jobs:
 
       - name: Download Blocklist
         run: |
-          curl -o ip-filter.blf "https://snort-org-site.s3.amazonaws.com/production/document_files/files/000/034/750/original/ip-filter.blf"
+          # Blocklist herunterladen mit zusätzlichem User-Agent-Header "MISP"
+          curl -L \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "User-Agent: MISP" \
+            --connect-timeout 20 \
+            -o ip-filter.blf \
+            "http://www.talosintelligence.com/documents/ip-blacklist"
 
       - name: Commit and Push Changes
         run: |
+          # Konfiguration von Git für den Commit
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+          # Änderungen hinzufügen und committen
           git add ip-filter.blf
+          if git diff --cached --exit-code; then
+            echo "Keine Änderungen gefunden, Push wird übersprungen."
+            exit 0
+          fi
+
           git commit -m "Automated update of IP blocklist"
           git push
